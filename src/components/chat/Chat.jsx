@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import "./chat.css";
 import EmojiPicker from "emoji-picker-react";
+import { arrayUnion, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { useUserStore } from "../../lib/userStore";
+import { doc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { useChatStore } from "../../lib/chatStore";
 
 const Chat = () => {
   const [open, setOpen] = useState(false);
   const [Text, setText] = useState("");
+  const [chat, setChat] = useState();   //? ✅ added
+  const {currentUser} = useUserStore()
+  const {chatID, user} = useChatStore()
   console.log(Text);
   const endRef = useRef(null)
 
@@ -12,10 +20,70 @@ const Chat = () => {
     endRef.current?.scrollIntoView({behavior:"smooth"})     
   },[])
 
+  useEffect(()=>{
+
+    if (!chatID) return;
+    const unSub = onSnapshot(doc(db,"chats",chatID),(res)=>{
+      setChat(res.data());
+    });
+    return () =>{
+      unSub();
+    };
+  },[chatID]);
+  console.log(chat)
+
   const handleEmoji = (e) => {
     setText((prev) => prev + e.emoji);
     setOpen(false);
   };
+
+  const handleSend = async () => {
+  if (Text === "" || !chatID || !currentUser) return;
+
+  try {
+    // push message to chat
+    await updateDoc(doc(db, "chats", chatID), {
+      messages: arrayUnion({
+        senderId: currentUser.id,
+        text: Text,
+        createdAt: Date.now()
+      })
+    });
+
+    // clear input
+    setText("");
+
+    // update last message in userChats
+    const userIDs = [currentUser.id,user.id]
+
+    for (const id of userIDs){
+    const userChatRef = doc(db, "userchats",id);
+    const userChatsSnapshot = await getDoc(userChatRef);
+
+    if (userChatsSnapshot.exists()) {
+      const userChatsData = userChatsSnapshot.data();
+
+      const chatIndex = userChatsData.chats.findIndex(
+        (c) => c.chatID === chatID
+      );
+
+      if (chatIndex !== -1) {
+        userChatsData.chats[chatIndex].lastMessage = Text;
+        userChatsData.chats[chatIndex].isSeen = id == false;
+        userChatsData.chats[chatIndex].updatedAt = Date.now();
+
+        await updateDoc(userChatRef, {
+          chats: userChatsData.chats,
+        });
+      }
+    }
+    }
+    
+  } catch (err) {
+    console.error("Error sending message:", err);
+  }
+};
+
 
   return (
     <div className="chat">
@@ -24,7 +92,7 @@ const Chat = () => {
         <div className="user">
           <img src="./avatar.png" alt="User Avatar" />
           <div className="texts">
-            <h1>Surya</h1>
+            <h1>{user?.username || "Unknown User"}</h1>
             <p>BaseBall huh?</p>
           </div>
         </div>
@@ -38,40 +106,18 @@ const Chat = () => {
 
       {/* Chat Messages */}
       <div className="center">
-        <div className="messages own">
-          <div className="texts">
-            <p>
-              Do you want me to also tweak this so that the picker anchors to
-              the right corner of the input bar (like WhatsApp) instead of
-              always from the left?
-            </p>
+        {chat?.messages.map((message) => (
+          <div className={`messages ${message.senderId === currentUser.id ? "own" : ""}`}key={message?.createdAt}>
+            <div className="texts">
+              <p>{message.text}</p>
+            </div>
           </div>
-          <span className="timestamp">1 min ago</span>
-        </div>
+))}
 
-        <div className="messages">
-          <img src="./avatar.png" alt="" />
-          <div className="texts">
-            <p>
-              Do you want me to also tweak this so that the picker anchors to
-              the right corner of the input bar (like WhatsApp) instead of
-              always from the left?
-            </p>
-          </div>
-          <span className="timestamp">1 min ago</span>
-        </div>
+        
+        
 
-        <div className="messages own">
-          <div className="texts">
-            <img src="https://picsum.photos/200/300" alt="Random" />
-            <p>
-              Do you want me to also tweak this so that the picker anchors to
-              the right corner of the input bar (like WhatsApp) instead of
-              always from the left?
-            </p>
-          </div>
-          <span className="timestamp">1 min ago</span>
-        </div>
+        
         <div ref={endRef}></div>
       </div>
 
@@ -99,7 +145,7 @@ const Chat = () => {
             <EmojiPicker open={open} onEmojiClick={handleEmoji} />
           </div>
         </div>
-        <button className="sendButton">Send</button>
+        <button className="sendButton" onClick={handleSend}>Send</button>
         
       </div>
     </div>

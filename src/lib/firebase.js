@@ -9,7 +9,7 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey:import.meta.env.VITE_KEY,
+  apiKey:"AIzaSyC6rAvGvc7RbNM21KHbzY9eQN9wcczqkEI",
   authDomain: "fujo-48b6f.firebaseapp.com",
   projectId: "fujo-48b6f",
   storageBucket: "fujo-48b6f.firebasestorage.app",
@@ -22,3 +22,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+console.log("Firebase initialized:", app.name); // should print [DEFAULT]
+console.log("Auth instance:", auth);

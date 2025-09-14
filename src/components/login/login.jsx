@@ -2,9 +2,11 @@ import "./login.css"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css';
-import { createUserWithEmailAndPassword } from "firebase/auth";
-
-
+import { createUserWithEmailAndPassword,signInWithEmailAndPassword } from "firebase/auth";
+import { auth, db } from "../../lib/firebase";
+import { doc,setDoc } from "firebase/firestore";
+import * as dicebear from '@dicebear/core';
+import { avataaars } from '@dicebear/collection';
 
 const Login = () => {
     const[avatar,setAvatar]=useState({
@@ -19,26 +21,64 @@ const Login = () => {
         })
     }
 
+    const [loading,setLoading] =  useState(false)
 
-    const handleLogin=(e)=>{
+    const handleLogin=async(e)=>{
       e.preventDefault();
-      toast.warn("Login functionality is not implemented yet")
+      setLoading(true)
+
+      const formData = new FormData(e.target);
+
+      const {username,email,password} = Object.fromEntries(formData);
+      console.log("Email entered:", email);
+
+      try{
+        await signInWithEmailAndPassword(auth,email,password)
+
+      }catch(err){
+        console.log(err)
+        toast.error(err.message)
+        toast.error(`${err.code}: ${err.message}`);
+      }finally{
+        setLoading(false)
+      }
     }
 
     const handleRegister=async(e)=>{
       e.preventDefault();
+      setLoading(true)
       const formData = new FormData(e.target);
 
       const {username,email,password} = Object.fromEntries(formData);
       console.log("Hi")
       try{
         const res = await createUserWithEmailAndPassword(auth,email,password)
+
+        await setDoc(doc(db,"users",res.user.uid),{
+          username,
+          email,
+          id: res.user.uid,
+          blocked:[]
+        });
+
+
+
+        
+
+        await setDoc(doc(db,"userchats",res.user.uid),{
+          chats:[]
+        });
+        toast.success("Account created")
+        
       }
       catch(err){
         console.log(err)
         toast.error(err.message)
+      }finally{
+        setLoading(false)
       }
     }
+    
   return (
     <div className="login">
       <div className="item">
@@ -46,7 +86,7 @@ const Login = () => {
         <form  onSubmit={handleLogin}>
           <input type="text" placeholder="Email" name="email" />
           <input type="password" placeholder="Password" name="password" />
-          <button>Sign In</button>
+          <button disabled={loading}>{loading?"loading":"Sign In"}</button>
         </form>
       </div>
 
@@ -61,7 +101,7 @@ const Login = () => {
             <input type="text" placeholder="Username" name="username" />
             <input type="text" placeholder="Email" name="email" />
             <input type="password" placeholder="Password" name="password" />
-            <button>Sign Up</button>
+            <button disabled={loading}>{loading?"loading":"Sign Up"}</button>
         </form>
       </div>
       </div>

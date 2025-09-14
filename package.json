@@ -10,11 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atlaskit/media-avatar-picker": "^26.3.0",
+    "@atlaskit/media-core": "^37.0.0",
+    "@atlaskit/modal-dialog": "^14.3.13",
+    "@dicebear/collection": "^9.2.4",
+    "@dicebear/core": "^9.2.4",
     "emoji-picker-react": "^4.13.3",
     "firebase": "^12.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-toastify": "^11.0.5"
+    "react-toastify": "^11.0.5",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
