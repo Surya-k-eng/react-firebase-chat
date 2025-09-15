@@ -5,7 +5,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['.ngrok-free.app'], // ✅ allow ALL ngrok links
-    host: true, // ✅ listen on 0.0.0.0, not just localhost
-  }
+    allowedHosts: ['.ngrok-free.app'],
+    host: true,
+  },
+  define: {
+    'global': 'window', // ← this tells simple-peer to use the browser window as global
+  },
 })

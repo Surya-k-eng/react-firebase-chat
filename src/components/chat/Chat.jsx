@@ -13,8 +13,23 @@ const Chat = () => {
   const [chat, setChat] = useState();   //? ✅ added
   const {currentUser} = useUserStore()
   const {chatID, user} = useChatStore()
+  const [incomingCall, setIncomingCall] = useState(null);
   console.log(Text);
   const endRef = useRef(null)
+
+  useEffect(() => {
+    if (!chatID || !currentUser) return;
+    const callDoc = doc(db, "voiceCalls", chatID);
+    const unsub = onSnapshot(callDoc, (snapshot) => {
+      const data = snapshot.data();
+      if (data && data.to === currentUser.id && !data.accepted) {
+        setIncomingCall(data);
+      }});
+      return () => unsub();
+    }, [chatID, currentUser]);
+
+  
+
 
   useEffect(()=>{
     endRef.current?.scrollIntoView({behavior:"smooth"})     
@@ -83,6 +98,7 @@ const Chat = () => {
     console.error("Error sending message:", err);
   }
 };
+
 
 
   return (
